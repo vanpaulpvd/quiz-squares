@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Squares Quiz</title>
+<style>
+  :root {
+    --bg: #f4f6fb; --card: #fff; --text: #1d2433; --muted: #6b7385;
+    --key: #fff; --key-border: #d5dae6; --accent: #3b5bdb;
+    --good: #2f9e44; --bad: #e03131; --bar: #3b5bdb;
+    --grid: rgba(59,91,219,.08); --deco: rgba(59,91,219,.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151c; --card: #1c212c; --text: #eef0f6; --muted: #98a0b3;
+      --key: #262c3a; --key-border: #343b4d; --accent: #748ffc;
+      --good: #51cf66; --bad: #ff6b6b; --bar: #748ffc;
+      --grid: rgba(116,143,252,.08); --deco: rgba(116,143,252,.15);
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background-color: var(--bg); color: var(--text);
+    /* graph-paper background */
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; justify-content: center;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .app {
+    width: 100%; max-width: 420px; height: 100%; position: relative; z-index: 1;
+    display: flex; flex-direction: column; padding: 16px; gap: 12px;
+  }
+  .deco { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .deco span { position: absolute; font-weight: 700; color: var(--deco); font-family: Georgia, "Times New Roman", serif; }
+  .brand { display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+  .brand .logo { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
+  .brand .logo i {
+    font-style: normal; font-family: Georgia, serif; background: var(--accent); color: #fff;
+    border-radius: 8px; padding: 2px 8px; font-size: 1.05rem;
+  }
+  .brand .progress { font-size: .95rem; color: var(--muted); font-weight: 600; }
+  .end { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; text-align: center; }
+  .end h2 { margin: 0; font-size: 1.6rem; }
+  .end .big { font-size: 4.5rem; font-weight: 800; color: var(--accent); line-height: 1; font-family: Georgia, serif; }
+  .end .big small { font-size: 2rem; color: var(--muted); font-weight: 600; }
+  .end p { margin: 0; color: var(--muted); font-size: 1.1rem; }
+  .end button { font: inherit; font-size: 1.4rem; font-weight: 600; padding: 14px 40px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; margin-top: 8px; }
+  .formula { font-family: Georgia, "Times New Roman", serif; font-size: 1.15rem; color: var(--accent); letter-spacing: .04em; }
+  .score { display: flex; justify-content: space-between; font-size: 1rem; color: var(--muted); }
+  .score b { color: var(--text); }
+  .timer { height: 8px; background: var(--key-border); border-radius: 4px; overflow: hidden; }
+  .timer > div { height: 100%; width: 100%; background: var(--bar); transform-origin: left; }
+  .card {
+    background: var(--card); border-radius: 20px; padding: 20px 16px;
+    text-align: center; transition: background .15s;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    border-top: 6px solid var(--accent);
+  }
+  .question { font-family: Georgia, "Times New Roman", serif; }
+  .card.good { background: color-mix(in srgb, var(--good) 22%, var(--card)); }
+  .card.bad  { background: color-mix(in srgb, var(--bad) 22%, var(--card)); }
+  .question { font-size: 3rem; font-weight: 700; min-height: 1.2em; }
+  .answer { font-size: 2.4rem; font-weight: 700; min-height: 1.3em; color: var(--accent); margin-top: 4px; }
+  .card.good .answer { color: var(--good); }
+  .card.bad .answer { color: var(--bad); }
+  .msg { min-height: 1.4em; color: var(--muted); font-size: 1.05rem; }
+  .keypad { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: 10px; min-height: 0; }
+  .keypad button {
+    font: inherit; font-size: 1.9rem; font-weight: 600; color: var(--text);
+    background: var(--key); border: 1px solid var(--key-border); border-radius: 14px;
+    touch-action: manipulation;
+  }
+  .keypad button:active { transform: scale(.96); }
+  .keypad .enter { background: var(--accent); color: #fff; border-color: var(--accent); font-size: 1.4rem; }
+  .keypad .back { font-size: 1.6rem; }
+  .start { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18px; text-align: center; }
+  .start h1 { margin: 0; font-size: 2rem; }
+  .start p { margin: 0; color: var(--muted); max-width: 300px; line-height: 1.4; }
+  .start button { font: inherit; font-size: 1.4rem; font-weight: 600; padding: 14px 40px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="deco" aria-hidden="true">
+  <span style="top:4%;left:8%;font-size:3.5rem">&sup2;</span>
+  <span style="top:9%;right:10%;font-size:3rem">&radic;</span>
+  <span style="top:26%;left:78%;font-size:2.4rem">&pi;</span>
+  <span style="top:38%;left:4%;font-size:2.6rem">&divide;</span>
+  <span style="top:52%;right:5%;font-size:3.2rem">&sum;</span>
+  <span style="top:66%;left:6%;font-size:3rem">&times;</span>
+  <span style="top:80%;right:12%;font-size:3.4rem">&sup2;</span>
+  <span style="top:90%;left:30%;font-size:2.8rem">=</span>
+  <span style="top:18%;left:42%;font-size:2.2rem">+</span>
+  <span style="top:72%;left:55%;font-size:2.4rem">&radic;</span>
+</div>
+<div class="app">
+  <div class="start" id="start">
+    <div class="formula">a&sup2; + b&sup2; = c&sup2;</div>
+    <h1>Squares Quiz</h1>
+    <p>Squares up to 20&sup2; and square roots up to &radic;400.<br>20 questions, 3 seconds each. Ready?</p>
+    <button id="startBtn">Start</button>
+  </div>
+
+  <div class="end hidden" id="end">
+    <div class="formula" id="endIcon"></div>
+    <h2 id="endTitle"></h2>
+    <div class="big"><span id="endScore">0</span><small> / 20</small></div>
+    <p id="endMsg"></p>
+    <button id="againBtn">Play again</button>
+  </div>
+
+  <div class="brand hidden" id="brand">
+    <div class="logo"><i>x&sup2;</i> Squares &amp; Roots</div>
+    <div class="progress" id="progress"></div>
+  </div>
+  <div class="score hidden" id="scoreRow">
+    <span>Correct: <b id="correct">0</b> / <b id="total">0</b></span>
+    <span>Streak: <b id="streak">0</b></span>
+  </div>
+  <div class="timer hidden" id="timerWrap"><div id="timerBar"></div></div>
+  <div class="card hidden" id="card">
+    <div class="question" id="question"></div>
+    <div class="answer" id="answer"></div>
+  </div>
+  <div class="msg hidden" id="msg"></div>
+  <div class="keypad hidden" id="keypad">
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button class="back" data-k="back" aria-label="Backspace">&#9003;</button>
+    <button data-k="0">0</button>
+    <button class="enter" data-k="enter">Enter</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const TIME_LIMIT = 3000;   // ms allowed per question
+  const FEEDBACK_MS = 1000;  // how long a wrong answer's correction stays up
+  const GOOD_MS = 450;       // brief flash on a correct answer
+  const ROUND_SIZE = 20;     // questions per round
+  const QUIZ_IDS = ['brand', 'scoreRow', 'timerWrap', 'card', 'msg', 'keypad'];
+
+  const $ = id => document.getElementById(id);
+  const els = {
+    start: $('start'), end: $('end'), brand: $('brand'), progress: $('progress'),
+    endScore: $('endScore'), endTitle: $('endTitle'), endMsg: $('endMsg'), endIcon: $('endIcon'),
+    scoreRow: $('scoreRow'), timerWrap: $('timerWrap'), timerBar: $('timerBar'),
+    card: $('card'), question: $('question'), answer: $('answer'), msg: $('msg'), keypad: $('keypad'),
+    correct: $('correct'), total: $('total'), streak: $('streak')
+  };
+
+  let correct = 0, total = 0, streak = 0;
+  let current = null, entry = '', locked = true, timeoutId = null, lastKey = '';
+
+  function makeQuestion() {
+    let q;
+    do {
+      const n = 1 + Math.floor(Math.random() * 20);
+      q = Math.random() < 0.5
+        ? { text: `${n}² = ?`, answer: n * n }
+        : { text: `√${n * n} = ?`, answer: n };
+    } while (q.text === lastKey);
+    lastKey = q.text;
+    return q;
+  }
+
+  function nextQuestion() {
+    current = makeQuestion();
+    entry = '';
+    locked = false;
+    els.progress.textContent = `Question ${total + 1} of ${ROUND_SIZE}`;
+    els.card.className = 'card';
+    els.question.textContent = current.text;
+    els.answer.textContent = ' ';
+    els.msg.textContent = '';
+    // restart the countdown bar
+    els.timerBar.style.transition = 'none';
+    els.timerBar.style.transform = 'scaleX(1)';
+    void els.timerBar.offsetWidth;
+    els.timerBar.style.transition = `transform ${TIME_LIMIT}ms linear`;
+    els.timerBar.style.transform = 'scaleX(0)';
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => finish(false, true), TIME_LIMIT);
+  }
+
+  function finish(isRight, timedOut) {
+    if (locked) return;
+    locked = true;
+    clearTimeout(timeoutId);
+    // freeze the bar where it is
+    const t = getComputedStyle(els.timerBar).transform;
+    els.timerBar.style.transition = 'none';
+    els.timerBar.style.transform = t;
+
+    total++;
+    if (isRight) { correct++; streak++; } else { streak = 0; }
+    els.correct.textContent = correct;
+    els.total.textContent = total;
+    els.streak.textContent = streak;
+
+    const next = total >= ROUND_SIZE ? endRound : nextQuestion;
+    if (isRight) {
+      els.card.className = 'card good';
+      els.msg.textContent = 'Correct!';
+      els.answer.textContent = current.answer;
+      setTimeout(next, GOOD_MS);
+    } else {
+      els.card.className = 'card bad';
+      els.msg.textContent = timedOut ? "Time's up! The answer is:" : 'Not quite. The answer is:';
+      els.answer.textContent = current.answer;
+      setTimeout(next, FEEDBACK_MS);
+    }
+  }
+
+  function endRound() {
+    QUIZ_IDS.forEach(id => els[id].classList.add('hidden'));
+    const pct = correct / ROUND_SIZE;
+    let icon, title, msg;
+    if (pct === 1)       { icon = 'π ★ ★ ★'; title = 'Perfect!';        msg = 'Every single one. Math master!'; }
+    else if (pct >= .85) { icon = '√ ★ ★';        title = 'Excellent!';      msg = 'Almost flawless. Keep it up!'; }
+    else if (pct >= .6)  { icon = '² ★';               title = 'Good work!';      msg = 'Getting there. Another round will sharpen it.'; }
+    else                 { icon = '+ 1';                          title = 'Keep practicing!'; msg = 'Every round makes the squares stick.'; }
+    els.endIcon.textContent = icon;
+    els.endTitle.textContent = title;
+    els.endScore.textContent = correct;
+    els.endMsg.textContent = msg;
+    els.end.classList.remove('hidden');
+  }
+
+  function press(k) {
+    if (locked) return;
+    if (k === 'back') entry = entry.slice(0, -1);
+    else if (k === 'enter') { finish(entry !== '' && Number(entry) === current.answer, false); return; }
+    else if (entry.length < 3) entry += k;
+    els.answer.textContent = entry || ' ';
+  }
+
+  els.keypad.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b) press(b.dataset.k);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (/^[0-9]$/.test(e.key)) press(e.key);
+    else if (e.key === 'Backspace') press('back');
+    else if (e.key === 'Enter') {
+      const onMenu = !els.start.classList.contains('hidden') || !els.end.classList.contains('hidden');
+      if (onMenu) start(); else press('enter');
+    }
+  });
+
+  function start() {
+    correct = 0; total = 0; streak = 0; lastKey = '';
+    els.correct.textContent = els.total.textContent = els.streak.textContent = 0;
+    els.start.classList.add('hidden');
+    els.end.classList.add('hidden');
+    QUIZ_IDS.forEach(id => els[id].classList.remove('hidden'));
+    nextQuestion();
+  }
+  $('startBtn').addEventListener('click', start);
+  $('againBtn').addEventListener('click', start);
+})();
+</script>
+</body>
+</html>
